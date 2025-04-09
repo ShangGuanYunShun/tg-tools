@@ -1,0 +1,32 @@
+telegram:
+  api_id: 124421169
+  api_hash: "8c453d89421adb4515sada7471556a0ce"
+  session_name: "tg_session"
+
+bot_notify:
+  bot_token: "8191197899:AAEfasfaiV_8Qq21316xc-Un2asfdafasjp1j6Zzc"
+  chat_id: 73501645156
+
+tasks:
+  - channel_name: "影巢"
+    channel: "https://t.me/hongxingyuna"
+    cron: "10 0 * * *"
+    message: "签到"
+    type: "签到（sign）"
+
+#  - channel_name: "健身提醒频道"
+#    channel: "https://t.me/example_channel_2"
+#    cron: "30 20 * * *"
+#    message: "打卡"
+#    type: "健身打卡（fitness）"
+
+logging:
+  level: "DEBUG"  # 设置日志级别: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+
+proxy:
+  use_proxy: true
+  type: "http"  # 或 "socks5"
+  host: "192.168.2.3"
+  port: 7890
+#  username: "your_username"  # 可选
+#  password: "your_password"  # 可选

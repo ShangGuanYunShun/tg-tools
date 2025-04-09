@@ -1,0 +1,18 @@
+services:
+  tg-cron-message:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tg-cron-message:latest
+    container_name: tg-cron-message
+    restart: always
+    volumes:
+      - /vol1/1000/data/tg-cron-message/config.yaml:/app/config.yaml:ro         # 配置文件只读挂载
+      - /vol1/1000/data/tg-cron-message/main.py:/app/main.py:ro         # 配置文件只读挂载
+      - /vol1/1000/data/tg-cron-message/session:/app/session                     # 持久化登录会话
+    environment:
+      - TZ=Asia/Shanghai
+      - HTTP_PROXY=http://192.168.2.3:7890  # 代理地址
+      - HTTPS_PROXY=http://192.168.2.3:7890
+    working_dir: /app
+    command: python main.py

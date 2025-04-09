@@ -1,0 +1,6 @@
+telethon
+pysocks
+apscheduler
+pyyaml
+requests
+urllib3
