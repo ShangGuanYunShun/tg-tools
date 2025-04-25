@@ -15,6 +15,7 @@ from telethon import TelegramClient
 
 CONFIG_FILE = "config.yaml"
 
+
 def load_config():
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -23,6 +24,7 @@ def load_config():
         logging.error(f"读取配置文件失败: {e}")
         raise
 
+
 def setup_logging(level):
     log_level = getattr(logging, level.upper(), logging.DEBUG)
     logging.basicConfig(
@@ -30,6 +32,7 @@ def setup_logging(level):
         level=log_level
     )
     print(f"日志级别已设置为 {level.upper()}")
+
 
 def send_bot_notification(bot_token, chat_id, message):
     try:
@@ -44,6 +47,7 @@ def send_bot_notification(bot_token, chat_id, message):
             logging.error(f"Bot 通知失败: {response.text}")
     except Exception as e:
         logging.error(f"Bot 通知异常: {e}")
+
 
 async def send_message(client, channel, message, notify_cfg=None, channel_name=None, task_type=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -74,14 +78,16 @@ async def send_message(client, channel, message, notify_cfg=None, channel_name=N
             )
             send_bot_notification(notify_cfg["bot_token"], notify_cfg["chat_id"], msg)
 
+
 async def keep_alive(client):
     while True:
-        await asyncio.sleep(120)  # 每60秒触发一次
+        await asyncio.sleep(600)  # 每60秒触发一次
         try:
             await client(functions.PingRequest(ping_id=12345))
             logging.debug("Sent keep-alive ping")
         except Exception as e:
             logging.error(f"Keep-alive failed: {e}")
+
 
 async def main():
     try:
@@ -116,34 +122,34 @@ async def main():
                 logging.debug(f"使用代理连接: {type}://{hostname}:{port}")
 
         logging.debug("正在初始化 TelegramClient...")
-        # 使用代理连接
-        if proxy:
-            client = TelegramClient(session_name, api_id, api_hash,
-                                    proxy=proxy,
-                                    timeout=20,
-                                    connection_retries=5,
-                                    auto_reconnect=True,
-                                    retry_delay=3)
-        else:
-            client = TelegramClient(session_name, api_id, api_hash)
-        logging.debug("初始化 TelegramClient完成")
-
-        # 检查 session 文件是否存在，不存在时进行登录
-        session_file = f"{session_name}.session"
-        # 日志输出 session 文件的路径
-        logging.debug(f"当前 session 文件路径: {session_file}")
         if not os.path.exists(f"{session_name}.session"):
             logging.debug("session 文件不存在，正在进行登录操作...")
-            await client.start(phone=phone, code_callback=lambda: code, bot_token=notify_cfg["bot_token"])
+            # 使用代理连接
+            if proxy:
+                client = TelegramClient('None', api_id, api_hash,
+                                        proxy=proxy,
+                                        timeout=20,
+                                        connection_retries=5,
+                                        auto_reconnect=True,
+                                        retry_delay=3)
+            else:
+                client = TelegramClient('None', api_id, api_hash)
+            await client.start(phone=phone, code_callback=lambda: code)
             logging.info("登录成功，session 已生成！")
         else:
             logging.info("使用现有的 session 登录...")
-            try:
-                # 登录时需要密码（如果启用了两步验证）
-                await client.start(phone=phone, code_callback=lambda: code, bot_token=notify_cfg["bot_token"])
-            except SessionPasswordNeededError:
-                logging.info('需要两步验证密码')
-                await client.start(password=password)
+            # 使用代理连接
+            if proxy:
+                client = TelegramClient(session_name, api_id, api_hash,
+                                        proxy=proxy,
+                                        timeout=20,
+                                        connection_retries=5,
+                                        auto_reconnect=True,
+                                        retry_delay=3)
+            else:
+                client = TelegramClient(session_name, api_id, api_hash)
+        logging.debug("初始化 TelegramClient完成")
+
         asyncio.create_task(keep_alive(client))
         scheduler = AsyncIOScheduler()
         for task in tasks:
