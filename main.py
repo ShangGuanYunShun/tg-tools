@@ -2,15 +2,11 @@ import os
 import yaml
 import asyncio
 import logging
-from telethon.sync import TelegramClient
-from telethon.errors import SessionPasswordNeededError
-from telethon.sessions import StringSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
 import requests
 from telethon.tl import functions
-from telethon.tl.types import PeerUser
 from telethon import TelegramClient
 
 CONFIG_FILE = "config.yaml"
@@ -49,30 +45,37 @@ def send_bot_notification(bot_token, chat_id, message):
         logging.error(f"Bot 通知异常: {e}")
 
 
-async def send_message(client, channel, message, notify_cfg=None, channel_name=None, task_type=None):
+async def send_message(client, target, message, notify_cfg=None, target_name=None, task_type=None):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
-        logging.info(f"正在向频道 {channel} 发送消息: {message}")
-        await client.send_message(channel, message)
-        log = f"[✓] {now} 已向【{channel_name or channel}】发送[{task_type or '默认'}]消息：{message}"
+        logging.info(f"正在向 {target_name or target} 发送消息: {message}")
+
+        # 尝试解析目标
+        # 如果是机器人，target 可能是 @botusername 或 bot_id
+        # 如果是频道，target 可能是 @channelusername 或 channel_id
+        # 对于机器人，Telethon 可以直接通过 username 或 ID 识别
+        entity = await client.get_entity(target)
+
+        await client.send_message(entity, message)
+
+        log = f"[✓] {now} 已向【{target_name or target}】发送[{task_type or '默认'}]消息：{message}"
         logging.info(log)
         if notify_cfg:
             msg = (
                 f"✅ 发送消息成功（{task_type or '未指定类型'}）\n"
-                f"频道: {channel_name or channel}\n"
-                f"链接: {channel}\n"
+                f"目标: {target_name or target}\n"
                 f"消息: {message}\n"
                 f"时间: {now}"
             )
             send_bot_notification(notify_cfg["bot_token"], notify_cfg["chat_id"], msg)
     except Exception as e:
-        err_log = f"[✗] {now} 向【{channel_name or channel}】发送[{task_type or '默认'}]失败：{e}"
+        err_log = f"[✗] {now} 向【{target_name or target}】发送[{task_type or '默认'}]失败：{e}"
         logging.error(err_log)
         if notify_cfg:
             msg = (
                 f"❌ 发送消息失败（{task_type or '未指定类型'}）\n"
-                f"频道: {channel_name or channel}\n"
-                f"链接: {channel}\n"
+                f"目标: {target_name or target}\n"
+                f"消息: {message}\n"
                 f"错误: {e}\n"
                 f"时间: {now}"
             )
@@ -148,18 +151,23 @@ async def main():
                                         retry_delay=3)
             else:
                 client = TelegramClient(session_name, api_id, api_hash)
+        await client.connect()  # 确保客户端已连接
+        if not await client.is_user_authorized():
+            logging.info("session 已过期，正在重新登录...")
+            await client.start(phone=phone, code_callback=lambda: code)
         logging.debug("初始化 TelegramClient完成")
 
         asyncio.create_task(keep_alive(client))
         scheduler = AsyncIOScheduler()
         for task in tasks:
             trigger = CronTrigger.from_crontab(task["cron"])
+            # 将 channel 参数改为 target，使其更通用
             scheduler.add_job(
                 send_message, trigger,
-                args=[client, task["channel"], task["message"], notify_cfg, task.get("channel_name"), task.get("type")]
+                args=[client, task["target"], task["message"], notify_cfg, task.get("target_name"), task.get("type")]
             )
             logging.info(
-                f"已添加任务：频道={task.get('channel_name', task['channel'])}，类型={task.get('type')}，cron={task['cron']}")
+                f"已添加任务：目标={task.get('target_name', task['target'])}，类型={task.get('type')}，cron={task['cron']}")
 
         scheduler.start()
         logging.info("启动调度器，等待任务执行...")

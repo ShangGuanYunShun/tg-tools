@@ -8,17 +8,25 @@ bot_notify:
   chat_id: 73501645156
 
 tasks:
-  - channel_name: "影巢"
-    channel: "https://t.me/hongxingyuna"
-    cron: "10 0 * * *"
-    message: "签到"
-    type: "签到（sign）"
+  - target: "@your_channel_username" # 目标可以是频道名或机器人用户名
+    target_name: "我的测试频道" # 可选，用于日志和通知显示
+    message: "这是一个定时发送到频道的测试消息。"
+    cron: "0 9 * * *" # 每天上午9点发送
 
-#  - channel_name: "健身提醒频道"
-#    channel: "https://t.me/example_channel_2"
-#    cron: "30 20 * * *"
-#    message: "打卡"
-#    type: "健身打卡（fitness）"
+  - target: "@your_bot_username" # 目标可以是机器人用户名
+    target_name: "我的测试机器人" # 可选，用于日志和通知显示
+    message: "这是一个定时发送给机器人的测试消息。"
+    cron: "30 10 * * *" # 每天上午10点30分发送
+
+  - target: -1001234567890 # 目标也可以是频道 ID
+    target_name: "另一个测试频道"
+    message: "另一个定时发送到频道的测试消息。"
+    cron: "0 12 * * *" # 每天中午12点发送
+
+  - target: 123456789 # 目标也可以是机器人 ID (如果知道的话)
+    target_name: "另一个测试机器人"
+    message: "另一个定时发送给机器人的测试消息。"
+    cron: "30 13 * * *" # 每天下午1点30分发送
 
 logging:
   level: "DEBUG"  # 设置日志级别: "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
